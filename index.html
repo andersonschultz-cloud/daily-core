@@ -8,7 +8,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
 
@@ -20,6 +20,8 @@
   <div class="bg-grid" aria-hidden="true"></div>
   <div class="bg-glow bg-glow--1" aria-hidden="true"></div>
   <div class="bg-glow bg-glow--2" aria-hidden="true"></div>
+  <div class="bg-noise" aria-hidden="true"></div>
+  <div class="bg-scanline" aria-hidden="true"></div>
 
   <!-- ═══════════════════════════════════════════
        HEADER
@@ -40,7 +42,7 @@
 
       <!-- Badge institucional -->
       <div class="header-badge">
-        <i class="fa-solid fa-leaf"></i>
+        <i class="fa-solid fa-circle-nodes"></i>
         <span>Coordenação de DevOps · Confederação Sicredi</span>
       </div>
 
@@ -195,13 +197,16 @@
 
   <!-- LOADING -->
   <div class="loading-overlay" id="js-loading" aria-label="Carregando dados...">
-    <div class="loading-spinner"></div>
-    <p>Carregando...</p>
+    <div class="loading-spinner">
+      <div class="loading-spinner-inner"></div>
+    </div>
+    <p class="loading-text">Inicializando<span class="loading-blink">_</span></p>
   </div>
 
   <!-- MODAL CONFIRMAÇÃO -->
   <div class="modal-overlay hidden" id="js-modal" role="dialog" aria-modal="true" aria-labelledby="js-modal-msg">
     <div class="modal-box">
+      <div class="modal-accent-bar"></div>
       <p class="modal-msg" id="js-modal-msg"></p>
       <div class="modal-actions">
         <button class="btn btn--ghost" id="js-modal-cancel">Cancelar</button>
