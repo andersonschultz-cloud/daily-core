@@ -285,15 +285,20 @@ body {
   background: rgba(0,194,224,0.06);
   border-color: rgba(0,194,224,0.18);
 }
+/* Tema escuro — logo fica branco (ok em fundo escuro) */
 .header-logo {
-  height: 44px; width: auto;
+  height: 44px;
+  width: auto;
   object-fit: contain;
-  filter: brightness(0) invert(1);
+  filter: brightness(0) invert(1); /* branco */
   opacity: 0.88;
-  transition: opacity var(--transition);
+  transition: opacity var(--transicao);
 }
 .header-logo:hover { opacity: 1; }
-[data-theme="light"] .header-logo { filter: brightness(0) invert(1); }
+/* Tema claro — logo volta ao visual original */
+[data-theme="light"] .header-logo {
+  filter: none; /* ← sem filtro, cor original do PNG */
+}
 
 /* ── Badge ── */
 .header-badge {
