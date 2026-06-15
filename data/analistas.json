@@ -17,7 +17,7 @@
       "badgeNumero": "55+",
       "badgeTexto": "novos hosts no Promtail",
       "badgeIcone": "fa-solid fa-server",
-      "corTema": "#2ec4ff",
+      "corTema": "#3FAE2A",
       "tags": ["SRE", "DevOps"],
       "entregas": [
         "Liderança e coordenação técnica do Programa Desenrola Brasil 2.0, conduzindo alinhamentos entre equipes, acompanhamento de histórias, PGDMs, CSS e tratativas operacionais.",
@@ -38,7 +38,7 @@
       "badgeNumero": "24/7",
       "badgeTexto": "suporte contínuo aos times",
       "badgeIcone": "fa-solid fa-headset",
-      "corTema": "#ff9500",
+      "corTema": "#7ED957",
       "tags": ["SRE", "DevOps"],
       "entregas": [
         "Atuação estratégica na atualização dos agentes de deploy no ambiente de homologação.",
@@ -54,7 +54,7 @@
       "badgeNumero": "3",
       "badgeTexto": "ambientes em análise de desativação",
       "badgeIcone": "fa-solid fa-database",
-      "corTema": "#7c5cff",
+      "corTema": "#4CAF50",
       "tags": ["SRE", "DevOps"],
       "entregas": [
         "Implementação de scripts JTA em ambiente legado e otimizações de cluster.",
@@ -72,7 +72,7 @@
       "badgeNumero": "100%",
       "badgeTexto": "revisão diária dos ambientes",
       "badgeIcone": "fa-solid fa-shield-halved",
-      "corTema": "#00e5a0",
+      "corTema": "#2F7D23",
       "tags": ["SRE", "DevOps"],
       "entregas": [
         "Instalação e configuração do Dynatrace no ambiente Gesgara.",
