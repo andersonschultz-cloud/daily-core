@@ -1,83 +1,83 @@
 {
-  titulo Principais Entregas da Semana,
-  subtitulo Time Core & Crédito,
-  descricao Resultados, melhorias operacionais, estabilidade e evolução contínua dos ambientes.,
-  destaques [
-    Evolução da observabilidade dos ambientes,
-    Aumento da estabilidade operacional,
-    Modernização de ferramentas e processos,
-    Suporte contínuo às entregas de negócio,
-    Atuação preventiva — reduzindo riscos e incidentes
+  "titulo": "Principais Entregas da Semana",
+  "subtitulo": "Time Core & Crédito",
+  "descricao": "Resultados, melhorias operacionais, estabilidade e evolução contínua dos ambientes.",
+  "destaques": [
+    "Evolução da observabilidade dos ambientes",
+    "Aumento da estabilidade operacional",
+    "Modernização de ferramentas e processos",
+    "Suporte contínuo às entregas de negócio",
+    "Atuação preventiva — reduzindo riscos e incidentes"
   ],
-  analistas [
+  "analistas": [
     {
-      nome Anderson Schultz Ribeiro,
-      cargo Analista SRE e DevOps PL,
-      foto assetsfotosanderson.jpg,
-      badgeNumero 55+,
-      badgeTexto novos hosts no Promtail,
-      badgeIcone fa-solid fa-server,
-      corTema #2ec4ff,
-      tags [SRE, DevOps],
-      entregas [
-        Liderança e coordenação técnica do Programa Desenrola Brasil 2.0, conduzindo alinhamentos entre equipes, acompanhamento de histórias, PGDMs, CSS e tratativas operacionais.,
-        Análise e limpeza de cache do ambiente ArcGIS, atuando diretamente na estabilização da plataforma.,
-        Gestão e priorização dos cards problema do time — encerramento de 3 problemas, 1 PGDM e remoção de monitoramento desnecessário.,
-        Implementação de melhorias no processo de sobreaviso, concluindo a migração do Infraphone para Jira Service Management Cloud.,
-        Ajuste de logrotate em ambiente SOA3C para melhoria operacional.,
-        Criação de trap de Health Check para ws_mua, reduzindo acionamentos indevidos de monitoramento.,
-        Apoio em testes de conectividade entre microserviços e serviços externos na nova stack tecnológica.,
-        Expansão da observabilidade 55 novos hosts no Promtail, superando 60 domínios monitorados.,
-        Apoio técnico em implantações críticas CNPJ Alfanumérico PLD e estabilização do ambiente wsCadastro.
+      "nome": "Anderson Schultz Ribeiro",
+      "cargo": "Analista SRE e DevOps PL",
+      "foto": "assets/fotos/anderson.jpg",
+      "badgeNumero": "55+",
+      "badgeTexto": "novos hosts no Promtail",
+      "badgeIcone": "fa-solid fa-server",
+      "corTema": "#2ec4ff",
+      "tags": ["SRE", "DevOps"],
+      "entregas": [
+        "Liderança e coordenação técnica do Programa Desenrola Brasil 2.0, conduzindo alinhamentos entre equipes, acompanhamento de histórias, PGDMs, CSS e tratativas operacionais.",
+        "Análise e limpeza de cache do ambiente ArcGIS, atuando diretamente na estabilização da plataforma.",
+        "Gestão e priorização dos cards problema do time — encerramento de 3 problemas, 1 PGDM e remoção de monitoramento desnecessário.",
+        "Implementação de melhorias no processo de sobreaviso, concluindo a migração do Infraphone para Jira Service Management Cloud.",
+        "Ajuste de logrotate em ambiente SOA3C para melhoria operacional.",
+        "Criação de trap de Health Check para ws_mua, reduzindo acionamentos indevidos de monitoramento.",
+        "Apoio em testes de conectividade entre microserviços e serviços externos na nova stack tecnológica.",
+        "Expansão da observabilidade: 55 novos hosts no Promtail, superando 60 domínios monitorados.",
+        "Apoio técnico em implantações críticas: CNPJ Alfanumérico PLD e estabilização do ambiente wsCadastro."
       ]
     },
     {
-      nome Diego Gonçalves de Oliveira,
-      cargo Analista SRE e DevOps SR,
-      foto assetsfotosdiego.jpg,
-      badgeNumero 247,
-      badgeTexto suporte contínuo aos times,
-      badgeIcone fa-solid fa-headset,
-      corTema #ff9500,
-      tags [SRE, DevOps],
-      entregas [
-        Atuação estratégica na atualização dos agentes de deploy no ambiente de homologação.,
-        Atendimento de requisições operacionais e suporte contínuo aos times via Teams.,
-        Evolução e sustentação do ambiente Hoverfly na nova stack tecnológica.,
-        Apoio à estabilidade e disponibilidade dos ambientes corporativos.
+      "nome": "Diego Gonçalves de Oliveira",
+      "cargo": "Analista SRE e DevOps SR",
+      "foto": "assets/fotos/diego.jpg",
+      "badgeNumero": "24/7",
+      "badgeTexto": "suporte contínuo aos times",
+      "badgeIcone": "fa-solid fa-headset",
+      "corTema": "#ff9500",
+      "tags": ["SRE", "DevOps"],
+      "entregas": [
+        "Atuação estratégica na atualização dos agentes de deploy no ambiente de homologação.",
+        "Atendimento de requisições operacionais e suporte contínuo aos times via Teams.",
+        "Evolução e sustentação do ambiente Hoverfly na nova stack tecnológica.",
+        "Apoio à estabilidade e disponibilidade dos ambientes corporativos."
       ]
     },
     {
-      nome Gilson Batista da Silva Souza,
-      cargo Analista SRE e DevOps SR,
-      foto assetsfotosgilson.jpg,
-      badgeNumero 3,
-      badgeTexto ambientes em análise de desativação,
-      badgeIcone fa-solid fa-database,
-      corTema #7c5cff,
-      tags [SRE, DevOps],
-      entregas [
-        Implementação de scripts JTA em ambiente legado e otimizações de cluster.,
-        Disponibilização da planilha corporativa de controle e liberação de acessos PAM.,
-        Levantamento e análise de ambientes HOM com RHEL5 para compartilhamento centralizado de logs.,
-        Ajustes de configuração e estabilização do ambiente Gesgara.,
-        Atuação conjunta com arquitetos e engenheiros na análise de desativação dos ambientes UCMDB, SOASCOM e WEBDB.,
-        Monitoramento preventivo e gestão de buckets com base em métricas e dashboards operacionais.
+      "nome": "Gilson Batista da Silva Souza",
+      "cargo": "Analista SRE e DevOps SR",
+      "foto": "assets/fotos/gilson.jpg",
+      "badgeNumero": "3",
+      "badgeTexto": "ambientes em análise de desativação",
+      "badgeIcone": "fa-solid fa-database",
+      "corTema": "#7c5cff",
+      "tags": ["SRE", "DevOps"],
+      "entregas": [
+        "Implementação de scripts JTA em ambiente legado e otimizações de cluster.",
+        "Disponibilização da planilha corporativa de controle e liberação de acessos PAM.",
+        "Levantamento e análise de ambientes HOM com RHEL5 para compartilhamento centralizado de logs.",
+        "Ajustes de configuração e estabilização do ambiente Gesgara.",
+        "Atuação conjunta com arquitetos e engenheiros na análise de desativação dos ambientes UCMDB, SOASCOM e WEBDB.",
+        "Monitoramento preventivo e gestão de buckets com base em métricas e dashboards operacionais."
       ]
     },
     {
-      nome Matheus da Silva de Farias,
-      cargo Analista SRE e DevOps JR,
-      foto assetsfotosmatheus.jpg,
-      badgeNumero 100%,
-      badgeTexto revisão diária dos ambientes,
-      badgeIcone fa-solid fa-shield-halved,
-      corTema #00e5a0,
-      tags [SRE, DevOps],
-      entregas [
-        Instalação e configuração do Dynatrace no ambiente Gesgara.,
-        Atuação contínua na estabilidade dos ambientes e atendimento das demandas operacionais.,
-        Revisão diária dos ambientes Core & Crédito visando prevenção de incidentes e aumento da confiabilidade operacional.
+      "nome": "Matheus da Silva de Farias",
+      "cargo": "Analista SRE e DevOps JR",
+      "foto": "assets/fotos/matheus.jpg",
+      "badgeNumero": "100%",
+      "badgeTexto": "revisão diária dos ambientes",
+      "badgeIcone": "fa-solid fa-shield-halved",
+      "corTema": "#00e5a0",
+      "tags": ["SRE", "DevOps"],
+      "entregas": [
+        "Instalação e configuração do Dynatrace no ambiente Gesgara.",
+        "Atuação contínua na estabilidade dos ambientes e atendimento das demandas operacionais.",
+        "Revisão diária dos ambientes Core & Crédito visando prevenção de incidentes e aumento da confiabilidade operacional."
       ]
     }
   ]
