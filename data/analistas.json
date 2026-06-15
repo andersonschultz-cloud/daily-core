@@ -1,4 +1,5 @@
 {
+  "versao": "2026-06-14",
   "titulo": "Principais Entregas da Semana",
   "subtitulo": "Time Core & Crédito",
   "descricao": "Resultados, melhorias operacionais, estabilidade e evolução contínua dos ambientes.",
@@ -18,7 +19,7 @@
       "badgeNumero": "55+",
       "badgeTexto": "novos hosts no Promtail",
       "badgeIcone": "fa-solid fa-server",
-      "corTema": "#00C2E0",
+      "corTema": "#259A6C",
       "tags": ["SRE", "DevOps"],
       "entregas": [
         "Liderança e coordenação técnica do Programa Desenrola Brasil 2.0, conduzindo alinhamentos entre equipes, acompanhamento de histórias, PGDMs, CSS e tratativas operacionais.",
@@ -39,7 +40,7 @@
       "badgeNumero": "24/7",
       "badgeTexto": "suporte contínuo aos times",
       "badgeIcone": "fa-solid fa-headset",
-      "corTema": "#14DEC8",
+      "corTema": "#357F82",
       "tags": ["SRE", "DevOps"],
       "entregas": [
         "Atuação estratégica na atualização dos agentes de deploy no ambiente de homologação.",
@@ -55,7 +56,7 @@
       "badgeNumero": "3",
       "badgeTexto": "ambientes em análise de desativação",
       "badgeIcone": "fa-solid fa-database",
-      "corTema": "#8EA3BC",
+      "corTema": "#6F8794",
       "tags": ["SRE", "DevOps"],
       "entregas": [
         "Implementação de scripts JTA em ambiente legado e otimizações de cluster.",
@@ -73,7 +74,7 @@
       "badgeNumero": "100%",
       "badgeTexto": "revisão diária dos ambientes",
       "badgeIcone": "fa-solid fa-shield-halved",
-      "corTema": "#E2B842",
+      "corTema": "#BB9748",
       "tags": ["SRE", "DevOps"],
       "entregas": [
         "Instalação e configuração do Dynatrace no ambiente Gesgara.",

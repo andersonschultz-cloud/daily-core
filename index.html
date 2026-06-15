@@ -3,8 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Daily DevOps — Time Core & Crédito · Sicredi" />
+  <meta name="description" content="Daily DevOps — Time Core & Crédito · Confederação Sicredi" />
+  <meta name="theme-color" content="#0F1B16" />
   <title>Daily Core & Crédito — Sicredi</title>
+
+  <!-- Favicon institucional (SVG inline — hexágono cooperativo + nós de rede) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230F1B16'/%3E%3Cpath d='M16 4 L27 10 V22 L16 28 L5 22 V10 Z' fill='none' stroke='%23259A6C' stroke-width='2'/%3E%3Cpath d='M16 10 L10 20 M16 10 L22 20 M10 20 L22 20' stroke='%23628878' stroke-width='1.2'/%3E%3Ccircle cx='16' cy='10' r='2.4' fill='%233FB585'/%3E%3Ccircle cx='10' cy='20' r='2.4' fill='%23357F82'/%3E%3Ccircle cx='22' cy='20' r='2.4' fill='%23BB9748'/%3E%3C/svg%3E" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,12 +20,10 @@
 </head>
 <body>
 
-  <!-- BG DECORATION -->
+  <!-- BG DECORATION (camadas estáticas e discretas — ver css/style.css) -->
   <div class="bg-grid" aria-hidden="true"></div>
   <div class="bg-glow bg-glow--1" aria-hidden="true"></div>
   <div class="bg-glow bg-glow--2" aria-hidden="true"></div>
-  <div class="bg-noise" aria-hidden="true"></div>
-  <div class="bg-scanline" aria-hidden="true"></div>
 
   <!-- ═══════════════════════════════════════════
        HEADER
@@ -29,15 +31,15 @@
   <header class="site-header" id="site-header">
     <div class="header-inner">
 
-      <!-- Logo -->
+      <!-- Logo (opcional — adicione assets/img/logo.png; some sem erro se ausente) -->
       <div class="header-logo-wrap">
-<img
-  src="assets/fotos/logo.png"
-  alt="Sicredi"
-  class="header-logo"
-  id="js-logo"
-  onerror="this.style.display='none'"
-/>
+        <img
+          src="assets/img/logo.png"
+          alt="Sicredi"
+          class="header-logo"
+          id="js-logo"
+          onerror="this.style.display='none'"
+        />
       </div>
 
       <!-- Badge institucional -->
@@ -123,34 +125,34 @@
     </div>
 
     <div class="toolbar-right">
-      <button id="js-toggle-theme" class="btn btn--ghost" title="Alternar tema claro/escuro">
+      <button type="button" id="js-toggle-theme" class="btn btn--ghost" title="Alternar tema claro/escuro">
         <i class="fa-solid fa-moon" id="js-theme-icon"></i>
         <span class="btn-label">Tema</span>
       </button>
 
-      <button id="js-toggle-edit" class="btn btn--edit" title="Ativar/desativar modo edição">
+      <button type="button" id="js-toggle-edit" class="btn btn--edit" title="Ativar/desativar modo edição">
         <i class="fa-solid fa-pen-to-square"></i>
         <span class="btn-label">Editar</span>
       </button>
 
-      <button id="js-add-analista" class="btn btn--success edit-only hidden" title="Adicionar analista">
+      <button type="button" id="js-add-analista" class="btn btn--success edit-only hidden" title="Adicionar analista">
         <i class="fa-solid fa-user-plus"></i>
         <span class="btn-label">Add</span>
       </button>
 
-      <button id="js-save" class="btn btn--primary edit-only hidden" title="Salvar alterações (Ctrl+S)">
+      <button type="button" id="js-save" class="btn btn--primary edit-only hidden" title="Salvar alterações (Ctrl+S)">
         <i class="fa-solid fa-floppy-disk"></i>
         <span class="btn-label">Salvar</span>
       </button>
 
       <div class="toolbar-divider"></div>
 
-      <button id="js-export-img" class="btn btn--ghost" title="Gerar imagem PNG da página inteira">
+      <button type="button" id="js-export-img" class="btn btn--ghost" title="Gerar imagem PNG da página inteira">
         <i class="fa-solid fa-image"></i>
         <span class="btn-label">Imagem</span>
       </button>
 
-      <button id="js-export-json" class="btn btn--ghost" title="Exportar dados JSON">
+      <button type="button" id="js-export-json" class="btn btn--ghost" title="Exportar dados JSON">
         <i class="fa-solid fa-file-export"></i>
         <span class="btn-label">Exportar</span>
       </button>
@@ -161,7 +163,7 @@
         <input type="file" id="js-import-input" accept=".json" style="display:none;" />
       </label>
 
-      <button id="js-share" class="btn btn--ghost" title="Gerar link compartilhável">
+      <button type="button" id="js-share" class="btn btn--ghost" title="Gerar link compartilhável">
         <i class="fa-solid fa-share-nodes"></i>
         <span class="btn-label">Link</span>
       </button>
@@ -209,8 +211,8 @@
       <div class="modal-accent-bar"></div>
       <p class="modal-msg" id="js-modal-msg"></p>
       <div class="modal-actions">
-        <button class="btn btn--ghost" id="js-modal-cancel">Cancelar</button>
-        <button class="btn btn--danger" id="js-modal-confirm">Confirmar</button>
+        <button type="button" class="btn btn--ghost" id="js-modal-cancel">Cancelar</button>
+        <button type="button" class="btn btn--danger" id="js-modal-confirm">Confirmar</button>
       </div>
     </div>
   </div>

@@ -1,14 +1,34 @@
 /**
- * Daily Core & Crédito — app.js v4.0
- * Obsidian Tech · Sicredi Identity · Edição in-place · LocalStorage · PNG Export · Import/Export
+ * Daily Core & Crédito — app.js v5.0
+ * "Cooperativismo Tech" · Sicredi Identity
+ * Edição in-place · LocalStorage · PNG Export · Import/Export
  *
- * CORREÇÕES v4.0:
- * - Paleta de cores migrada para Obsidian Tech (ciano, teal, dourado, slate)
- * - LS_KEY atualizado para v4 (evita conflito com cache antigo)
- * - Cores fallback atualizadas (rgba ciano)
- * - adicionarAnalista usa nova paleta
- * - getDemoData com corTema v4 e dataDaily
- * - Bug fix: ui.sort adicionado aos seletores
+ * CHANGELOG v5.0 (evolução do v4.0 "Obsidian Tech"):
+ * - [BUG] fetchDados agora SEMPRE consulta data/analistas.json e
+ *   compara o campo "versao" com o cache local. Se a versão mudou
+ *   (nova semana), os dados do JSON têm prioridade — mas as fotos
+ *   enviadas pela equipe (LS_PHOTOS) são preservadas. Antes, o
+ *   cache local tinha prioridade absoluta e o JSON nunca era lido
+ *   de novo enquanto houvesse cache.
+ * - [BUG] Exportação de imagem totalmente refeita: classe
+ *   `body.is-exporting` remove o scroll interno de `.card-entregas`,
+ *   oculta camadas de fundo fixas e ajusta o background ANTES de
+ *   medir as dimensões e chamar o html2canvas — garante que TODOS
+ *   os analistas e TODAS as entregas apareçam, sem cortes.
+ * - [BUG] Upload de foto agora é redimensionado/comprimido via
+ *   <canvas> (máx. 480px, JPEG) antes de ir para o LocalStorage,
+ *   evitando QuotaExceededError. Falhas de armazenamento agora
+ *   exibem toast (antes só logavam no console).
+ * - [BUG] Botão "Link" agora é funcional: codifica busca/ordenação
+ *   atuais no hash da URL e restaura ao abrir o link.
+ * - [BUG] Removido código morto em syncField (querySelectorAll
+ *   de atributo que nunca existia).
+ * - [A11Y] Modal de confirmação agora gerencia foco (foco vai para
+ *   o botão Cancelar ao abrir e retorna ao elemento de origem ao
+ *   fechar); Esc fecha o modal.
+ * - Paleta de cores/fallbacks atualizada para "Cooperativismo Tech"
+ *   (verde institucional / petróleo / dourado), LS_KEY -> v5.
+ * - escHtml agora também escapa aspas simples.
  */
 (function () {
   'use strict';
@@ -16,10 +36,15 @@
   /* ══════════════════════════════════════
      CONSTANTES
   ══════════════════════════════════════ */
-  const LS_KEY    = 'sicredi-daily-v4';
-  const LS_THEME  = 'sicredi-daily-theme-v4';
-  const LS_PHOTOS = 'sicredi-daily-photos-v4';
-  const DATA_URL  = 'data/analistas.json';
+  const LS_KEY     = 'sicredi-daily-v5';
+  const LS_THEME   = 'sicredi-daily-theme-v5';
+  const LS_PHOTOS  = 'sicredi-daily-photos-v5';
+  const LS_VERSION = 'sicredi-daily-versao-v5';
+  const DATA_URL   = 'data/analistas.json';
+
+  // Cor padrão (verde institucional) usada como fallback sempre que
+  // um analista não tiver "corTema" definido ou o valor for inválido.
+  const COR_PADRAO = '#259A6C';
 
   /* ══════════════════════════════════════
      ESTADO
@@ -79,30 +104,59 @@
     loadPhotos();
     await fetchDados();
     bindGlobalEvents();
+    restoreFromHash();
     hideLoading();
   }
 
   /* ══════════════════════════════════════
      FETCH / LOAD
+     ------------------------------------
+     Estratégia v5 (corrige bug de cache):
+     1. Tenta buscar data/analistas.json (sempre).
+     2. Lê o cache local (se existir).
+     3. Se NÃO houver JSON remoto -> usa cache local ou demo.
+     4. Se houver JSON remoto e a "versao" for DIFERENTE da
+        versão salva localmente (ou não houver cache) -> usa o
+        JSON remoto (nova semana). As fotos enviadas pela equipe
+        continuam vindo do LS_PHOTOS, independente da versão.
+     5. Se a "versao" for IGUAL -> usa o cache local (preserva
+        edições feitas em modo edição + "Salvar" nesta sessão).
   ══════════════════════════════════════ */
   async function fetchDados() {
-    // 1. LocalStorage tem prioridade
-    const saved = localStorage.getItem(LS_KEY);
-    if (saved) {
-      try {
-        state.dados = JSON.parse(saved);
-        processarDados();
-        return;
-      } catch (_) { /* corrompido, carrega JSON */ }
-    }
-    // 2. JSON do servidor
+    let remote = null;
     try {
       const res = await fetch(DATA_URL + '?_=' + Date.now());
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      state.dados = await res.json();
+      if (res.ok) remote = await res.json();
     } catch (_) {
-      state.dados = getDemoData();
+      // Sem rede ou executando via file:// (fetch bloqueado).
+      // Segue com o cache local / dados de demonstração.
     }
+
+    let local = null;
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) local = JSON.parse(raw);
+    } catch (_) {
+      local = null; // cache corrompido — ignora
+    }
+
+    if (remote) {
+      const remoteVersao = String(remote.versao || remote.dataDaily || '');
+      const localVersao  = localStorage.getItem(LS_VERSION) || '';
+
+      if (!local || remoteVersao !== localVersao) {
+        // Nova semana (ou primeira carga): dados do JSON têm prioridade.
+        state.dados = remote;
+        localStorage.setItem(LS_VERSION, remoteVersao);
+        try { localStorage.setItem(LS_KEY, JSON.stringify(remote)); } catch (_) {}
+      } else {
+        // Mesma versão: preserva edições feitas nesta sessão.
+        state.dados = local;
+      }
+    } else {
+      state.dados = local || getDemoData();
+    }
+
     processarDados();
   }
 
@@ -141,7 +195,7 @@
       const photo = state.photos[a.nome] || a.foto || null;
       const first = (a.nome || '').split(' ')[0];
       const inits = getInitials(a.nome);
-      const cor   = a.corTema || '#00C2E0';
+      const cor   = a.corTema || COR_PADRAO;
 
       chip.innerHTML = `
         ${photo
@@ -184,7 +238,7 @@
      BUILD CARD
   ══════════════════════════════════════ */
   function buildCard(a) {
-    const cor      = a.corTema   || '#00C2E0';
+    const cor      = a.corTema   || COR_PADRAO;
     const cor22    = hexAlpha(cor, 0.22);
     const cor10    = hexAlpha(cor, 0.10);
     const inits    = getInitials(a.nome);
@@ -212,6 +266,7 @@
           : `<div class="card-photo-fallback" style="background:linear-gradient(135deg,${cor},${hexAlpha(cor,0.4)})">${inits}</div>`
         }
         <div class="card-photo-overlay"><i class="fa-solid fa-camera"></i><span>Trocar</span></div>
+        <span class="card-photo-badge" aria-hidden="true"><i class="fa-solid fa-camera"></i></span>
         <input type="file" class="card-photo-input" accept="image/*" />
       </div>`;
 
@@ -229,7 +284,7 @@
     card.innerHTML = `
       <div class="card-accent-line" style="background:linear-gradient(90deg,${cor},${hexAlpha(cor,0.4)})"></div>
 
-      <button class="card-remove-btn" title="Remover analista" aria-label="Remover ${escHtml(a.nome)}">
+      <button type="button" class="card-remove-btn" title="Remover analista" aria-label="Remover ${escHtml(a.nome)}">
         <i class="fa-solid fa-xmark"></i>
       </button>
 
@@ -310,36 +365,43 @@
       if (state.editMode) photoInput.click();
     });
 
-    photoInput.addEventListener('change', (e) => {
+    photoInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const dataUrl   = ev.target.result;
-        const nomeAtual = card.dataset.nome;
-        state.photos[nomeAtual] = dataUrl;
-        savePhotos();
-
-        let img = card.querySelector('.card-photo');
-        const fallback = card.querySelector('.card-photo-fallback');
-        if (img) {
-          img.src = dataUrl;
-          img.style.display = '';
-          if (fallback) fallback.style.display = 'none';
-        } else if (fallback) {
-          img = document.createElement('img');
-          img.className = 'card-photo';
-          img.src = dataUrl;
-          img.alt = nomeAtual;
-          img.loading = 'lazy';
-          fallback.parentNode.insertBefore(img, fallback);
-          fallback.style.display = 'none';
-        }
-        renderAvatares();
-        showToast('📸 Foto atualizada com sucesso!');
-      };
-      reader.readAsDataURL(file);
       e.target.value = '';
+      if (!file) return;
+
+      let dataUrl;
+      try {
+        // Redimensiona/comprime antes de gravar no LocalStorage
+        // (evita QuotaExceededError com fotos grandes de celular).
+        dataUrl = await resizeImageFile(file, 480, 0.85);
+      } catch (err) {
+        console.error('Erro ao processar imagem:', err);
+        showToast('❌ Não foi possível processar a imagem selecionada.');
+        return;
+      }
+
+      const nomeAtual = card.dataset.nome;
+      state.photos[nomeAtual] = dataUrl;
+      const ok = savePhotos();
+
+      let img = card.querySelector('.card-photo');
+      const fallback = card.querySelector('.card-photo-fallback');
+      if (img) {
+        img.src = dataUrl;
+        img.style.display = '';
+        if (fallback) fallback.style.display = 'none';
+      } else if (fallback) {
+        img = document.createElement('img');
+        img.className = 'card-photo';
+        img.src = dataUrl;
+        img.alt = nomeAtual;
+        img.loading = 'lazy';
+        fallback.parentNode.insertBefore(img, fallback);
+        fallback.style.display = 'none';
+      }
+      renderAvatares();
+      if (ok) showToast('📸 Foto atualizada com sucesso!');
     });
 
     card.querySelector('.card-remove-btn').addEventListener('click', () => {
@@ -370,7 +432,7 @@
 
       const ul  = card.querySelector('.card-entregas');
       const idx = a.entregas.length - 1;
-      const cor = a.corTema || '#00C2E0';
+      const cor = a.corTema || COR_PADRAO;
       ul.insertAdjacentHTML('beforeend', buildEntregaHTML(newText, idx, cor));
       bindEntregaEvents(card, a);
       updateEntregasCount(card, a);
@@ -427,7 +489,7 @@
 
   function reRenderEntregas(card, a) {
     const ul  = card.querySelector('.card-entregas');
-    const cor = a.corTema || '#00C2E0';
+    const cor = a.corTema || COR_PADRAO;
     if (!ul) return;
     ul.innerHTML = (a.entregas || []).map((e, i) => buildEntregaHTML(e, i, cor)).join('');
     bindEntregaEvents(card, a);
@@ -457,7 +519,6 @@
       }
       a.nome = val;
       card.dataset.nome = val;
-      card.querySelectorAll('[data-nome]').forEach(sub => sub.dataset.nome = val);
     } else {
       a[field] = val;
     }
@@ -537,6 +598,10 @@
 
     try {
       localStorage.setItem(LS_KEY, JSON.stringify(d));
+      // A versão local acompanha o "versao"/"dataDaily" atual, para
+      // que esta sessão continue usando os dados editados até que
+      // data/analistas.json seja publicado com uma versão diferente.
+      localStorage.setItem(LS_VERSION, String(d.versao || d.dataDaily || ''));
       savePhotos();
       showToast('💾 Dados salvos com sucesso!');
     } catch (e) {
@@ -553,8 +618,11 @@
   function savePhotos() {
     try {
       localStorage.setItem(LS_PHOTOS, JSON.stringify(state.photos));
+      return true;
     } catch (e) {
-      console.warn('Fotos grandes demais para LocalStorage:', e);
+      console.warn('Não foi possível salvar fotos no LocalStorage:', e);
+      showToast('⚠️ Foto não pôde ser salva — armazenamento do navegador está cheio.');
+      return false;
     }
   }
   function loadPhotos() {
@@ -564,8 +632,58 @@
     } catch (_) {}
   }
 
+  /**
+   * Redimensiona uma imagem (arquivo selecionado pelo usuário) usando
+   * <canvas>, limitando o lado maior a `maxSize` pixels, e retorna um
+   * data URL JPEG comprimido. Evita estourar a cota do LocalStorage
+   * com fotos de celular (que costumam ter vários MB).
+   */
+  function resizeImageFile(file, maxSize, quality) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error || new Error('Falha ao ler arquivo'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Arquivo não é uma imagem válida'));
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxSize || height > maxSize) {
+            if (width >= height) {
+              height = Math.round(height * (maxSize / width));
+              width  = maxSize;
+            } else {
+              width  = Math.round(width * (maxSize / height));
+              height = maxSize;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width  = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   /* ══════════════════════════════════════
      EXPORTAR IMAGEM
+     ------------------------------------
+     CORREÇÃO COMPLETA (v5):
+     - Adiciona a classe `body.is-exporting` ANTES de medir as
+       dimensões da página. Essa classe (definida em style.css):
+         • remove max-height/overflow de .card-entregas, exibindo
+           TODAS as entregas de TODOS os analistas;
+         • oculta as camadas de fundo `position:fixed`
+           (.bg-grid/.bg-glow), que causavam duplicações/cortes;
+         • troca `background-attachment: fixed` por `scroll`.
+     - Aguarda reflow (sleep) e recalcula altura/largura DEPOIS de
+       aplicar a classe, garantindo que o html2canvas capture a
+       página já expandida.
+     - Remove a classe no `finally`, restaurando o layout normal.
   ══════════════════════════════════════ */
   async function exportarImagem() {
     if (state.exporting) return;
@@ -584,10 +702,16 @@
     }
 
     ui.toolbar.style.setProperty('display', 'none', 'important');
-    await sleep(120);
+    // Ativa o modo de exportação: expande listas de entregas,
+    // oculta fundos fixos e ajusta o background-attachment.
+    document.body.classList.add('is-exporting');
+
+    // Aguarda o navegador recalcular o layout (reflow) com o novo
+    // tamanho dos cards antes de medir a página.
+    await sleep(150);
 
     try {
-      const docEl  = document.documentElement;
+      const docEl = document.documentElement;
       const totalH = Math.max(
         document.body.scrollHeight, document.body.offsetHeight,
         docEl.scrollHeight, docEl.offsetHeight
@@ -596,7 +720,7 @@
         document.body.scrollWidth, docEl.scrollWidth, docEl.clientWidth
       );
 
-      const bgColor = getComputedStyle(document.body).backgroundColor || '#04070D';
+      const bgColor = getComputedStyle(document.body).backgroundColor || '#0F1B16';
 
       const canvas = await html2canvas(document.body, {
         scale:           2,
@@ -615,6 +739,13 @@
         onclone: (clonedDoc) => {
           const tb = clonedDoc.getElementById('js-toolbar');
           if (tb) tb.style.display = 'none';
+          // Garantia extra: mesmo que alguma regra não tenha sido
+          // aplicada a tempo, força a expansão total das entregas
+          // e remove animações no documento clonado.
+          clonedDoc.querySelectorAll('.card-entregas').forEach(ul => {
+            ul.style.maxHeight = 'none';
+            ul.style.overflow  = 'visible';
+          });
           clonedDoc.querySelectorAll('.analyst-card').forEach(c => {
             c.style.animation = 'none';
             c.style.opacity   = '1';
@@ -623,8 +754,11 @@
         }
       });
 
+      const dataDaily = (ui.dataDaily.textContent || '').trim()
+        .replace(/[^\d]/g, '-').replace(/^-+|-+$/g, '') || getSemana();
+
       const link    = document.createElement('a');
-      link.download = `Daily-Core-Credito-${getSemana()}.png`;
+      link.download = `Daily-Core-Credito-${dataDaily}.png`;
       link.href     = canvas.toDataURL('image/png', 1.0);
       link.click();
       showToast('🖼️ Imagem gerada com sucesso!');
@@ -632,6 +766,7 @@
       console.error('Erro ao gerar imagem:', err);
       showToast('❌ Erro ao gerar imagem. Tente novamente.');
     } finally {
+      document.body.classList.remove('is-exporting');
       ui.toolbar.style.removeProperty('display');
       if (wasEditing) {
         document.body.classList.add('edit-mode');
@@ -681,7 +816,10 @@
           savePhotos();
         }
         state.dados = imported;
-        try { localStorage.setItem(LS_KEY, JSON.stringify(imported)); } catch (_) {}
+        try {
+          localStorage.setItem(LS_KEY, JSON.stringify(imported));
+          localStorage.setItem(LS_VERSION, String(imported.versao || imported.dataDaily || ''));
+        } catch (_) {}
         processarDados();
         showToast('✅ Dados importados com sucesso!');
       } catch (_) {
@@ -695,8 +833,9 @@
      ADICIONAR ANALISTA
   ══════════════════════════════════════ */
   function adicionarAnalista() {
-    // Paleta Obsidian Tech v4
-    const cores = ['#00C2E0', '#14DEC8', '#E2B842', '#8EA3BC', '#33D2EE'];
+    // Paleta "Cooperativismo Tech" — verde institucional, petróleo,
+    // cinza corporativo, dourado e verde claro de apoio.
+    const cores = ['#259A6C', '#357F82', '#6F8794', '#BB9748', '#3FB585'];
     const cor   = cores[state.analistas.length % cores.length];
     const novo  = {
       nome:        'Novo Analista',
@@ -752,29 +891,58 @@
   }
 
   /* ══════════════════════════════════════
-     GERAR LINK
+     LINK COMPARTILHÁVEL
+     ------------------------------------
+     CORREÇÃO (v5): o link agora é funcional de fato. A busca e a
+     ordenação atuais são codificadas no hash da URL (#q=...&ordenar=...)
+     e restauradas automaticamente por restoreFromHash() ao abrir o
+     link — útil para compartilhar, por exemplo, "veja as entregas do
+     Anderson" já filtradas.
   ══════════════════════════════════════ */
   function gerarLink() {
     try {
-      const payload = {
-        titulo:    ui.titulo.textContent.trim(),
-        subtitulo: ui.subtitulo.textContent.trim(),
-        semana:    getSemana(),
-        membros:   state.analistas.map(a => a.nome),
-      };
-      const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
-      const url     = `${location.origin}${location.pathname}?ref=${encoded}`;
+      const params = new URLSearchParams();
+      if (state.query)                       params.set('q', state.query);
+      if (state.sortBy && state.sortBy !== 'default') params.set('ordenar', state.sortBy);
+
+      const hash = params.toString();
+      const url  = `${location.origin}${location.pathname}${hash ? '#' + hash : ''}`;
+      const msg  = hash
+        ? '🔗 Link copiado! Inclui o filtro/ordenação atuais.'
+        : '🔗 Link copiado para a área de transferência!';
 
       if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(url)
-          .then(() => showToast('🔗 Link copiado para a área de transferência!'));
+        navigator.clipboard.writeText(url).then(() => showToast(msg));
       } else {
         fallbackCopy(url);
-        showToast('🔗 Link copiado!');
+        showToast(msg);
       }
     } catch (_) {
       showToast('❌ Não foi possível gerar o link.');
     }
+  }
+
+  /** Restaura busca/ordenação a partir do hash da URL (#q=...&ordenar=...) */
+  function restoreFromHash() {
+    if (!location.hash || location.hash.length < 2) return;
+    try {
+      const params  = new URLSearchParams(location.hash.slice(1));
+      const q       = params.get('q');
+      const ordenar = params.get('ordenar');
+      let changed = false;
+
+      if (q) {
+        state.query = q.toLowerCase();
+        if (ui.search) ui.search.value = q;
+        changed = true;
+      }
+      if (ordenar && ui.sort && [...ui.sort.options].some(o => o.value === ordenar)) {
+        state.sortBy = ordenar;
+        ui.sort.value = ordenar;
+        changed = true;
+      }
+      if (changed) filtrarEOrdenar();
+    } catch (_) { /* hash inválido — ignora */ }
   }
 
   function fallbackCopy(text) {
@@ -818,12 +986,30 @@
 
   /* ══════════════════════════════════════
      MODAL
+     ------------------------------------
+     CORREÇÃO (v5): gerenciamento básico de foco. Ao abrir, o foco
+     vai para o botão "Cancelar" (ação não-destrutiva); ao fechar
+     (por qualquer meio), o foco retorna ao elemento que abriu o
+     modal. Esc também fecha o modal.
   ══════════════════════════════════════ */
   let _confirmCb = null;
+  let _lastFocused = null;
+
   function confirmDialog(msg, cb) {
     ui.modalMsg.innerHTML = msg;
     ui.modal.classList.remove('hidden');
     _confirmCb = cb;
+    _lastFocused = document.activeElement;
+    ui.modalCancel.focus();
+  }
+
+  function closeModal() {
+    ui.modal.classList.add('hidden');
+    _confirmCb = null;
+    if (_lastFocused && typeof _lastFocused.focus === 'function') {
+      _lastFocused.focus();
+    }
+    _lastFocused = null;
   }
 
   /* ══════════════════════════════════════
@@ -861,20 +1047,22 @@
 
     ui.shareBtn.addEventListener('click', gerarLink);
 
-    ui.modalCancel.addEventListener('click', () => {
-      ui.modal.classList.add('hidden');
-      _confirmCb = null;
-    });
+    ui.modalCancel.addEventListener('click', closeModal);
     ui.modalConfirm.addEventListener('click', () => {
-      if (typeof _confirmCb === 'function') _confirmCb();
-      ui.modal.classList.add('hidden');
-      _confirmCb = null;
+      const cb = _confirmCb;
+      closeModal();
+      if (typeof cb === 'function') cb();
     });
     ui.modal.addEventListener('click', (e) => {
-      if (e.target === ui.modal) ui.modal.classList.add('hidden');
+      if (e.target === ui.modal) closeModal();
     });
 
     document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !ui.modal.classList.contains('hidden')) {
+        e.preventDefault();
+        closeModal();
+        return;
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         if (state.editMode) salvar();
@@ -906,12 +1094,13 @@
   }
 
   function hexAlpha(hex, alpha) {
-    const c = hex.replace('#', '');
-    if (c.length < 6) return `rgba(0,194,224,${alpha})`;
+    const c = String(hex || '').replace('#', '');
+    const fallback = `rgba(37,154,108,${alpha})`; // verde institucional
+    if (c.length < 6) return fallback;
     const r = parseInt(c.slice(0,2), 16);
     const g = parseInt(c.slice(2,4), 16);
     const b = parseInt(c.slice(4,6), 16);
-    if (isNaN(r+g+b)) return `rgba(0,194,224,${alpha})`;
+    if (isNaN(r+g+b)) return fallback;
     return `rgba(${r},${g},${b},${alpha})`;
   }
 
@@ -920,7 +1109,8 @@
       .replace(/&/g,'&amp;')
       .replace(/</g,'&lt;')
       .replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;');
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
   }
 
   function getSemana() {
@@ -947,10 +1137,13 @@
   }
 
   /* ══════════════════════════════════════
-     DADOS DEMO (fallback)
+     DADOS DEMO (fallback — usado apenas se
+     data/analistas.json não puder ser carregado
+     e não houver cache local)
   ══════════════════════════════════════ */
   function getDemoData() {
     return {
+      versao:    getTodayFormatted(),
       titulo:    'Principais Entregas da Semana',
       subtitulo: 'Time Core & Crédito',
       descricao: 'Resultados, melhorias operacionais, estabilidade e evolução contínua dos ambientes.',
@@ -967,28 +1160,28 @@
           nome: 'Anderson Schultz Ribeiro', cargo: 'Analista SRE e DevOps PL',
           foto: 'assets/fotos/anderson.jpg', badgeNumero: '55+',
           badgeTexto: 'novos hosts no Promtail', badgeIcone: 'fa-solid fa-server',
-          corTema: '#00C2E0', tags: ['SRE', 'DevOps'],
+          corTema: '#259A6C', tags: ['SRE', 'DevOps'],
           entregas: ['Liderança técnica do Programa Desenrola Brasil 2.0.', 'Expansão da observabilidade: 55 novos hosts no Promtail.'],
         },
         {
           nome: 'Diego Gonçalves de Oliveira', cargo: 'Analista SRE e DevOps SR',
           foto: 'assets/fotos/diego.jpg', badgeNumero: '24/7',
           badgeTexto: 'suporte contínuo aos times', badgeIcone: 'fa-solid fa-headset',
-          corTema: '#14DEC8', tags: ['SRE', 'DevOps'],
+          corTema: '#357F82', tags: ['SRE', 'DevOps'],
           entregas: ['Atualização dos agentes de deploy em homologação.', 'Evolução do ambiente Hoverfly na nova stack.'],
         },
         {
           nome: 'Gilson Batista da Silva Souza', cargo: 'Analista SRE e DevOps SR',
           foto: 'assets/fotos/gilson.jpg', badgeNumero: '3',
           badgeTexto: 'ambientes em análise de desativação', badgeIcone: 'fa-solid fa-database',
-          corTema: '#8EA3BC', tags: ['SRE', 'DevOps'],
+          corTema: '#6F8794', tags: ['SRE', 'DevOps'],
           entregas: ['Análise de desativação dos ambientes UCMDB, SOASCOM e WEBDB.', 'Disponibilização da planilha de controle PAM.'],
         },
         {
           nome: 'Matheus da Silva de Farias', cargo: 'Analista SRE e DevOps JR',
           foto: 'assets/fotos/matheus.jpg', badgeNumero: '100%',
           badgeTexto: 'revisão diária dos ambientes', badgeIcone: 'fa-solid fa-shield-halved',
-          corTema: '#E2B842', tags: ['SRE', 'DevOps'],
+          corTema: '#BB9748', tags: ['SRE', 'DevOps'],
           entregas: ['Instalação e configuração do Dynatrace no ambiente Gesgara.', 'Revisão diária dos ambientes Core & Crédito.'],
         },
       ],
