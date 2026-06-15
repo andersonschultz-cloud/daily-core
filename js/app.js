@@ -1,13 +1,14 @@
 /**
- * Daily Core & Crédito — app.js v3.0
- * Sicredi Identity · Edição in-place · LocalStorage · PNG Export · Import/Export
+ * Daily Core & Crédito — app.js v4.0
+ * Obsidian Tech · Sicredi Identity · Edição in-place · LocalStorage · PNG Export · Import/Export
  *
- * CORREÇÕES v3.0:
- * - Captura de imagem 100% da página (sem cortes)
- * - Campo Data da Daily editável e persistido
- * - Logo dinâmico via assets/logo.png
- * - Identidade visual Sicredi completa
- * - Bug fixes: sync de estado, remoção de analistas, foto persistência
+ * CORREÇÕES v4.0:
+ * - Paleta de cores migrada para Obsidian Tech (ciano, teal, dourado, slate)
+ * - LS_KEY atualizado para v4 (evita conflito com cache antigo)
+ * - Cores fallback atualizadas (rgba ciano)
+ * - adicionarAnalista usa nova paleta
+ * - getDemoData com corTema v4 e dataDaily
+ * - Bug fix: ui.sort adicionado aos seletores
  */
 (function () {
   'use strict';
@@ -15,25 +16,25 @@
   /* ══════════════════════════════════════
      CONSTANTES
   ══════════════════════════════════════ */
-  const LS_KEY      = 'sicredi-daily-v3';
-  const LS_THEME    = 'sicredi-daily-theme-v3';
-  const LS_PHOTOS   = 'sicredi-daily-photos-v3';
-  const DATA_URL    = 'data/analistas.json';
+  const LS_KEY    = 'sicredi-daily-v4';
+  const LS_THEME  = 'sicredi-daily-theme-v4';
+  const LS_PHOTOS = 'sicredi-daily-photos-v4';
+  const DATA_URL  = 'data/analistas.json';
 
   /* ══════════════════════════════════════
      ESTADO
   ══════════════════════════════════════ */
   const state = {
-    dados:      null,
-    analistas:  [],
-    filtrados:  [],
-    photos:     {},
-    query:      '',
-    sortBy:     'default',
-    editMode:   false,
-    theme:      'dark',
-    saving:     false,
-    exporting:  false,
+    dados:     null,
+    analistas: [],
+    filtrados: [],
+    photos:    {},
+    query:     '',
+    sortBy:    'default',
+    editMode:  false,
+    theme:     'dark',
+    saving:    false,
+    exporting: false,
   };
 
   /* ══════════════════════════════════════
@@ -133,14 +134,14 @@
   function renderAvatares() {
     ui.avatares.innerHTML = '';
     state.analistas.forEach((a) => {
-      const chip   = document.createElement('div');
+      const chip = document.createElement('div');
       chip.className = 'avatar-chip';
       chip.setAttribute('role', 'listitem');
 
-      const photo  = state.photos[a.nome] || a.foto || null;
-      const first  = (a.nome || '').split(' ')[0];
-      const inits  = getInitials(a.nome);
-      const cor    = a.corTema || '#3FA110';
+      const photo = state.photos[a.nome] || a.foto || null;
+      const first = (a.nome || '').split(' ')[0];
+      const inits = getInitials(a.nome);
+      const cor   = a.corTema || '#00C2E0';
 
       chip.innerHTML = `
         ${photo
@@ -176,7 +177,6 @@
       ui.grid.appendChild(card);
     });
 
-    // Aplicar estado de edição se ativo
     if (state.editMode) applyEditStateToAll(true);
   }
 
@@ -184,7 +184,7 @@
      BUILD CARD
   ══════════════════════════════════════ */
   function buildCard(a) {
-    const cor      = a.corTema   || '#3FA110';
+    const cor      = a.corTema   || '#00C2E0';
     const cor22    = hexAlpha(cor, 0.22);
     const cor10    = hexAlpha(cor, 0.10);
     const inits    = getInitials(a.nome);
@@ -227,15 +227,12 @@
       .map((e, i) => buildEntregaHTML(e, i, cor)).join('');
 
     card.innerHTML = `
-      <!-- Accent line -->
       <div class="card-accent-line" style="background:linear-gradient(90deg,${cor},${hexAlpha(cor,0.4)})"></div>
 
-      <!-- Remover card -->
       <button class="card-remove-btn" title="Remover analista" aria-label="Remover ${escHtml(a.nome)}">
         <i class="fa-solid fa-xmark"></i>
       </button>
 
-      <!-- Header -->
       <div class="card-header">
         ${fotoHTML}
         <div class="card-info">
@@ -252,10 +249,11 @@
         </div>
       </div>
 
-      <!-- Badge -->
       ${a.badgeNumero ? `
       <div class="card-badge">
-        <div class="badge-icon"><i class="${escHtml(badgeIco)}"></i></div>
+        <div class="badge-icon" style="background:linear-gradient(135deg,${cor},${hexAlpha(cor,0.6)})">
+          <i class="${escHtml(badgeIco)}"></i>
+        </div>
         <div>
           <div class="badge-number editable-field"
                contenteditable="false"
@@ -268,7 +266,6 @@
         </div>
       </div>` : ''}
 
-      <!-- Entregas -->
       <div class="card-entregas-header">
         <p class="card-entregas-title">
           <i class="fa-solid fa-circle-check"></i>
@@ -306,9 +303,6 @@
      EVENTOS DO CARD
   ══════════════════════════════════════ */
   function bindCardEvents(card, analista) {
-    const nome = analista.nome;
-
-    /* -- Foto: clique para upload -- */
     const photoWrap  = card.querySelector('.card-photo-wrap');
     const photoInput = card.querySelector('.card-photo-input');
 
@@ -321,13 +315,11 @@
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (ev) => {
-        const dataUrl = ev.target.result;
-        // Atualizar nome corrente (pode ter sido editado)
+        const dataUrl   = ev.target.result;
         const nomeAtual = card.dataset.nome;
         state.photos[nomeAtual] = dataUrl;
         savePhotos();
 
-        // Atualizar visualmente
         let img = card.querySelector('.card-photo');
         const fallback = card.querySelector('.card-photo-fallback');
         if (img) {
@@ -350,7 +342,6 @@
       e.target.value = '';
     });
 
-    /* -- Remover analista -- */
     card.querySelector('.card-remove-btn').addEventListener('click', () => {
       const nomeAtual = card.dataset.nome;
       confirmDialog(
@@ -369,7 +360,6 @@
       );
     });
 
-    /* -- Adicionar entrega -- */
     card.querySelector('.card-add-entrega').addEventListener('click', () => {
       const nomeAtual = card.dataset.nome;
       const a = getByNome(nomeAtual);
@@ -380,19 +370,17 @@
 
       const ul  = card.querySelector('.card-entregas');
       const idx = a.entregas.length - 1;
-      const cor = a.corTema || '#3FA110';
+      const cor = a.corTema || '#00C2E0';
       ul.insertAdjacentHTML('beforeend', buildEntregaHTML(newText, idx, cor));
       bindEntregaEvents(card, a);
       updateEntregasCount(card, a);
       applyEditStateToCard(card, true);
 
-      // Foco no novo campo
       const newEl = ul.querySelector(`.entrega-text[data-idx="${idx}"]`);
       if (newEl) { newEl.focus(); selectAll(newEl); }
       showToast('✅ Entrega adicionada!');
     });
 
-    /* -- Campos editáveis: sync on blur -- */
     card.querySelectorAll('.editable-field').forEach(el => {
       el.addEventListener('blur', () => syncField(el, card));
       el.addEventListener('keydown', (e) => {
@@ -400,12 +388,10 @@
       });
     });
 
-    /* -- Entregas -- */
     bindEntregaEvents(card, analista);
   }
 
   function bindEntregaEvents(card, analista) {
-    /* Clonar para remover listeners antigos */
     card.querySelectorAll('.entrega-remove').forEach(btn => {
       const nb = btn.cloneNode(true);
       btn.parentNode.replaceChild(nb, btn);
@@ -441,7 +427,7 @@
 
   function reRenderEntregas(card, a) {
     const ul  = card.querySelector('.card-entregas');
-    const cor = a.corTema || '#3FA110';
+    const cor = a.corTema || '#00C2E0';
     if (!ul) return;
     ul.innerHTML = (a.entregas || []).map((e, i) => buildEntregaHTML(e, i, cor)).join('');
     bindEntregaEvents(card, a);
@@ -464,7 +450,6 @@
     if (!val) return;
 
     if (field === 'nome' && val !== nomeAtual) {
-      // Transferir foto para novo nome
       if (state.photos[nomeAtual]) {
         state.photos[val] = state.photos[nomeAtual];
         delete state.photos[nomeAtual];
@@ -472,7 +457,6 @@
       }
       a.nome = val;
       card.dataset.nome = val;
-      // Atualizar data-nome em sub-elementos
       card.querySelectorAll('[data-nome]').forEach(sub => sub.dataset.nome = val);
     } else {
       a[field] = val;
@@ -503,23 +487,19 @@
     state.editMode = !state.editMode;
     document.body.classList.toggle('edit-mode', state.editMode);
 
-    // Botão
     ui.editBtn.classList.toggle('active', state.editMode);
     ui.editBtn.querySelector('.btn-label').textContent =
       state.editMode ? 'Sair Edição' : 'Editar';
 
-    // Botões exclusivos do modo edição
     document.querySelectorAll('.edit-only').forEach(el =>
       el.classList.toggle('hidden', !state.editMode)
     );
 
-    // Campos do header
     const headerFields = [ui.titulo, ui.subtitulo, ui.descricao, ui.dataDaily];
     headerFields.forEach(el => {
       if (el) el.contentEditable = state.editMode ? 'true' : 'false';
     });
 
-    // Campos dos cards
     applyEditStateToAll(state.editMode);
 
     showToast(
@@ -548,7 +528,6 @@
     if (state.saving) return;
     state.saving = true;
 
-    // Sincronizar header
     const d = state.dados;
     d.titulo    = ui.titulo.textContent.trim()    || d.titulo;
     d.subtitulo = ui.subtitulo.textContent.trim() || d.subtitulo;
@@ -586,7 +565,7 @@
   }
 
   /* ══════════════════════════════════════
-     EXPORTAR IMAGEM — CORRIGIDO v3.0
+     EXPORTAR IMAGEM
   ══════════════════════════════════════ */
   async function exportarImagem() {
     if (state.exporting) return;
@@ -598,57 +577,44 @@
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
     showToast('⏳ Gerando imagem... aguarde.');
 
-    // Desativar edit mode se ativo
     const wasEditing = state.editMode;
     if (wasEditing) {
       document.body.classList.remove('edit-mode');
       applyEditStateToAll(false);
     }
 
-    // Ocultar toolbar
     ui.toolbar.style.setProperty('display', 'none', 'important');
-
-    // Aguardar repaint
     await sleep(120);
 
     try {
-      const docEl   = document.documentElement;
-      const totalH  = Math.max(
-        document.body.scrollHeight,
-        document.body.offsetHeight,
-        docEl.scrollHeight,
-        docEl.offsetHeight
+      const docEl  = document.documentElement;
+      const totalH = Math.max(
+        document.body.scrollHeight, document.body.offsetHeight,
+        docEl.scrollHeight, docEl.offsetHeight
       );
-      const totalW  = Math.max(
-        document.body.scrollWidth,
-        docEl.scrollWidth,
-        docEl.clientWidth
+      const totalW = Math.max(
+        document.body.scrollWidth, docEl.scrollWidth, docEl.clientWidth
       );
 
-      const bgColor = getComputedStyle(document.body)
-        .backgroundColor || '#080F08';
+      const bgColor = getComputedStyle(document.body).backgroundColor || '#04070D';
 
       const canvas = await html2canvas(document.body, {
         scale:           2,
         useCORS:         true,
         allowTaint:      true,
         backgroundColor: bgColor,
-        scrollX:         0,
-        scrollY:         0,
-        x:               0,
-        y:               0,
-        width:           totalW,
-        height:          totalH,
-        windowWidth:     totalW,
-        windowHeight:    totalH,
+        scrollX: 0, scrollY: 0,
+        x: 0, y: 0,
+        width:        totalW,
+        height:       totalH,
+        windowWidth:  totalW,
+        windowHeight: totalH,
         logging:         false,
         removeContainer: true,
         imageTimeout:    8000,
         onclone: (clonedDoc) => {
-          // Garantir toolbar oculta no clone
           const tb = clonedDoc.getElementById('js-toolbar');
           if (tb) tb.style.display = 'none';
-          // Garantir cards visíveis
           clonedDoc.querySelectorAll('.analyst-card').forEach(c => {
             c.style.animation = 'none';
             c.style.opacity   = '1';
@@ -657,18 +623,15 @@
         }
       });
 
-      // Download
-      const link      = document.createElement('a');
-      link.download   = `Daily-Core-Credito-${getSemana()}.png`;
-      link.href       = canvas.toDataURL('image/png', 1.0);
+      const link    = document.createElement('a');
+      link.download = `Daily-Core-Credito-${getSemana()}.png`;
+      link.href     = canvas.toDataURL('image/png', 1.0);
       link.click();
-
       showToast('🖼️ Imagem gerada com sucesso!');
     } catch (err) {
       console.error('Erro ao gerar imagem:', err);
       showToast('❌ Erro ao gerar imagem. Tente novamente.');
     } finally {
-      // Restaurar
       ui.toolbar.style.removeProperty('display');
       if (wasEditing) {
         document.body.classList.add('edit-mode');
@@ -684,14 +647,13 @@
      EXPORTAR JSON
   ══════════════════════════════════════ */
   function exportarJSON() {
-    // Sincronizar header antes de exportar
     const d = { ...state.dados };
     d.titulo    = ui.titulo.textContent.trim()    || d.titulo;
     d.subtitulo = ui.subtitulo.textContent.trim() || d.subtitulo;
     d.descricao = ui.descricao.textContent.trim() || d.descricao;
     d.dataDaily = ui.dataDaily.textContent.trim() || d.dataDaily;
     d.analistas = state.analistas;
-    d._photos   = state.photos;  // inclui fotos como base64
+    d._photos   = state.photos;
 
     const json = JSON.stringify(d, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
@@ -713,16 +675,13 @@
     reader.onload = (e) => {
       try {
         const imported = JSON.parse(e.target.result);
-        // Fotos embutidas
         if (imported._photos && typeof imported._photos === 'object') {
           state.photos = imported._photos;
           delete imported._photos;
           savePhotos();
         }
         state.dados = imported;
-        try {
-          localStorage.setItem(LS_KEY, JSON.stringify(imported));
-        } catch (_) {}
+        try { localStorage.setItem(LS_KEY, JSON.stringify(imported)); } catch (_) {}
         processarDados();
         showToast('✅ Dados importados com sucesso!');
       } catch (_) {
@@ -736,7 +695,8 @@
      ADICIONAR ANALISTA
   ══════════════════════════════════════ */
   function adicionarAnalista() {
-    const cores = ['#3FA110','#146E37','#FFCD00','#5A645A','#7AB648'];
+    // Paleta Obsidian Tech v4
+    const cores = ['#00C2E0', '#14DEC8', '#E2B842', '#8EA3BC', '#33D2EE'];
     const cor   = cores[state.analistas.length % cores.length];
     const novo  = {
       nome:        'Novo Analista',
@@ -754,7 +714,6 @@
     filtrarEOrdenar();
     renderAvatares();
 
-    // Scroll suave para o novo card
     setTimeout(() => {
       const cards = ui.grid.querySelectorAll('.analyst-card');
       if (cards.length) {
@@ -858,7 +817,7 @@
   }
 
   /* ══════════════════════════════════════
-     MODAL CONFIRMAÇÃO
+     MODAL
   ══════════════════════════════════════ */
   let _confirmCb = null;
   function confirmDialog(msg, cb) {
@@ -902,7 +861,6 @@
 
     ui.shareBtn.addEventListener('click', gerarLink);
 
-    // Modal
     ui.modalCancel.addEventListener('click', () => {
       ui.modal.classList.add('hidden');
       _confirmCb = null;
@@ -916,19 +874,14 @@
       if (e.target === ui.modal) ui.modal.classList.add('hidden');
     });
 
-    // Atalho Ctrl+S
     document.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         if (state.editMode) salvar();
       }
-      // Esc sai do modo edição
-      if (e.key === 'Escape' && state.editMode) {
-        toggleEditMode();
-      }
+      if (e.key === 'Escape' && state.editMode) toggleEditMode();
     });
 
-    // Blur header fields
     [ui.titulo, ui.subtitulo, ui.descricao, ui.dataDaily].forEach(el => {
       if (!el) return;
       el.addEventListener('keydown', (e) => {
@@ -954,11 +907,11 @@
 
   function hexAlpha(hex, alpha) {
     const c = hex.replace('#', '');
-    if (c.length < 6) return `rgba(63,161,16,${alpha})`;
+    if (c.length < 6) return `rgba(0,194,224,${alpha})`;
     const r = parseInt(c.slice(0,2), 16);
     const g = parseInt(c.slice(2,4), 16);
     const b = parseInt(c.slice(4,6), 16);
-    if (isNaN(r+g+b)) return `rgba(63,161,16,${alpha})`;
+    if (isNaN(r+g+b)) return `rgba(0,194,224,${alpha})`;
     return `rgba(${r},${g},${b},${alpha})`;
   }
 
@@ -998,89 +951,47 @@
   ══════════════════════════════════════ */
   function getDemoData() {
     return {
-      titulo:    "Principais Entregas da Semana",
-      subtitulo: "Time Core & Crédito",
-      descricao: "Resultados, melhorias operacionais, estabilidade e evolução contínua dos ambientes.",
+      titulo:    'Principais Entregas da Semana',
+      subtitulo: 'Time Core & Crédito',
+      descricao: 'Resultados, melhorias operacionais, estabilidade e evolução contínua dos ambientes.',
       dataDaily: getTodayFormatted(),
       destaques: [
-        "Evolução da observabilidade dos ambientes",
-        "Aumento da estabilidade operacional",
-        "Modernização de ferramentas e processos",
-        "Suporte contínuo às entregas de negócio",
-        "Atuação preventiva — reduzindo riscos e incidentes"
+        'Evolução da observabilidade dos ambientes',
+        'Aumento da estabilidade operacional',
+        'Modernização de ferramentas e processos',
+        'Suporte contínuo às entregas de negócio',
+        'Atuação preventiva — reduzindo riscos e incidentes',
       ],
       analistas: [
         {
-          nome:        "Anderson Schultz Ribeiro",
-          cargo:       "Analista SRE e DevOps PL",
-          foto:        "assets/fotos/anderson.jpg",
-          badgeNumero: "55+",
-          badgeTexto:  "novos hosts no Promtail",
-          badgeIcone:  "fa-solid fa-server",
-          corTema:     "#3FA110",
-          tags:        ["SRE","DevOps"],
-          entregas: [
-            "Liderança e coordenação técnica do Programa Desenrola Brasil 2.0, conduzindo alinhamentos entre equipes, acompanhamento de histórias, PGDMs, CSS e tratativas operacionais.",
-            "Análise e limpeza de cache do ambiente ArcGIS, atuando diretamente na estabilização da plataforma.",
-            "Gestão e priorização dos cards problema do time — encerramento de 3 problemas, 1 PGDM e remoção de monitoramento desnecessário.",
-            "Implementação de melhorias no processo de sobreaviso, concluindo a migração do Infraphone para Jira Service Management Cloud.",
-            "Ajuste de logrotate em ambiente SOA3C para melhoria operacional.",
-            "Criação de trap de Health Check para ws_mua, reduzindo acionamentos indevidos de monitoramento.",
-            "Apoio em testes de conectividade entre microserviços e serviços externos na nova stack tecnológica.",
-            "Expansão da observabilidade: 55 novos hosts no Promtail, superando 60 domínios monitorados.",
-            "Apoio técnico em implantações críticas: CNPJ Alfanumérico PLD e estabilização do ambiente wsCadastro."
-          ]
+          nome: 'Anderson Schultz Ribeiro', cargo: 'Analista SRE e DevOps PL',
+          foto: 'assets/fotos/anderson.jpg', badgeNumero: '55+',
+          badgeTexto: 'novos hosts no Promtail', badgeIcone: 'fa-solid fa-server',
+          corTema: '#00C2E0', tags: ['SRE', 'DevOps'],
+          entregas: ['Liderança técnica do Programa Desenrola Brasil 2.0.', 'Expansão da observabilidade: 55 novos hosts no Promtail.'],
         },
         {
-          nome:        "Diego Gonçalves de Oliveira",
-          cargo:       "Analista SRE e DevOps SR",
-          foto:        "assets/fotos/diego.jpg",
-          badgeNumero: "24/7",
-          badgeTexto:  "suporte contínuo aos times",
-          badgeIcone:  "fa-solid fa-headset",
-          corTema:     "#146E37",
-          tags:        ["SRE","DevOps"],
-          entregas: [
-            "Atuação estratégica na atualização dos agentes de deploy no ambiente de homologação.",
-            "Atendimento de requisições operacionais e suporte contínuo aos times via Teams.",
-            "Evolução e sustentação do ambiente Hoverfly na nova stack tecnológica.",
-            "Apoio à estabilidade e disponibilidade dos ambientes corporativos."
-          ]
+          nome: 'Diego Gonçalves de Oliveira', cargo: 'Analista SRE e DevOps SR',
+          foto: 'assets/fotos/diego.jpg', badgeNumero: '24/7',
+          badgeTexto: 'suporte contínuo aos times', badgeIcone: 'fa-solid fa-headset',
+          corTema: '#14DEC8', tags: ['SRE', 'DevOps'],
+          entregas: ['Atualização dos agentes de deploy em homologação.', 'Evolução do ambiente Hoverfly na nova stack.'],
         },
         {
-          nome:        "Gilson Batista da Silva Souza",
-          cargo:       "Analista SRE e DevOps SR",
-          foto:        "assets/fotos/gilson.jpg",
-          badgeNumero: "3",
-          badgeTexto:  "ambientes em análise de desativação",
-          badgeIcone:  "fa-solid fa-database",
-          corTema:     "#5A645A",
-          tags:        ["SRE","DevOps"],
-          entregas: [
-            "Implementação de scripts JTA em ambiente legado e otimizações de cluster.",
-            "Disponibilização da planilha corporativa de controle e liberação de acessos PAM.",
-            "Levantamento e análise de ambientes HOM com RHEL5 para compartilhamento centralizado de logs.",
-            "Ajustes de configuração e estabilização do ambiente Gesgara.",
-            "Atuação conjunta com arquitetos e engenheiros na análise de desativação dos ambientes UCMDB, SOASCOM e WEBDB.",
-            "Monitoramento preventivo e gestão de buckets com base em métricas e dashboards operacionais."
-          ]
+          nome: 'Gilson Batista da Silva Souza', cargo: 'Analista SRE e DevOps SR',
+          foto: 'assets/fotos/gilson.jpg', badgeNumero: '3',
+          badgeTexto: 'ambientes em análise de desativação', badgeIcone: 'fa-solid fa-database',
+          corTema: '#8EA3BC', tags: ['SRE', 'DevOps'],
+          entregas: ['Análise de desativação dos ambientes UCMDB, SOASCOM e WEBDB.', 'Disponibilização da planilha de controle PAM.'],
         },
         {
-          nome:        "Matheus da Silva de Farias",
-          cargo:       "Analista SRE e DevOps JR",
-          foto:        "assets/fotos/matheus.jpg",
-          badgeNumero: "100%",
-          badgeTexto:  "revisão diária dos ambientes",
-          badgeIcone:  "fa-solid fa-shield-halved",
-          corTema:     "#FFCD00",
-          tags:        ["SRE","DevOps"],
-          entregas: [
-            "Instalação e configuração do Dynatrace no ambiente Gesgara.",
-            "Atuação contínua na estabilidade dos ambientes e atendimento das demandas operacionais.",
-            "Revisão diária dos ambientes Core & Crédito visando prevenção de incidentes e aumento da confiabilidade operacional."
-          ]
-        }
-      ]
+          nome: 'Matheus da Silva de Farias', cargo: 'Analista SRE e DevOps JR',
+          foto: 'assets/fotos/matheus.jpg', badgeNumero: '100%',
+          badgeTexto: 'revisão diária dos ambientes', badgeIcone: 'fa-solid fa-shield-halved',
+          corTema: '#E2B842', tags: ['SRE', 'DevOps'],
+          entregas: ['Instalação e configuração do Dynatrace no ambiente Gesgara.', 'Revisão diária dos ambientes Core & Crédito.'],
+        },
+      ],
     };
   }
 
